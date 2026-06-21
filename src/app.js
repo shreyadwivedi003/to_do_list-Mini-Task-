@@ -24,16 +24,29 @@ app.get('/notes',(req,res)=>{
 
 app.delete('/notes/:index',(req,res)=>{
     const index=req.params.index
+    if(!notes[index]){
+        return res.status(404).json({
+            messagee:"Note not found"
+        })
+    }
     delete notes[index]
     res.status(200).json({
         message:"Note deleted successfully"
     })
+    
 })
 
 
 
 app.patch('/notes/:index',(req,res)=>{
     const index=req.params.index
+
+    if(!notes[index]){
+        return res.status(404).json({
+            messagee:"Note not found"
+        })
+    }
+    
     const title=req.body.title
     const description=req.body.description
     notes[index].title=title
