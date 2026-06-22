@@ -1,93 +1,22 @@
-To-Do List API Documentation & Architecture Overview
-1. Executive Summary
-This document provides the technical specifications, architectural reasoning, and implementation challenges for the Node.js/Express-based To-Do List (Notes) API. The system is designed to handle core task management through standard RESTful constraints.
-2. CRUD Operations Overview
-The API collectively fulfills the four fundamental operations of persistent storage (CRUD) using an in-memory data array (notes):
-Create (C): Handled via POST /notes. It appends new task objects containing user-defined data directly into the system array.
-Read (R): Handled via GET /notes. It retrieves the entire state of the array, enabling user interfaces to display updated task data.
-Update (U): Handled via PATCH /notes/:index. It targets a specific element using its position index, allowing selective data modifications without replacing the whole resource.
-Delete (D): Handled via DELETE /notes/:index. It systematically eliminates a single record from the data array and shifts remaining records to maintain array integrity.
-3. Detailed API Endpoint Specifications
-📥 1. Create a Note
-Endpoint URL: http://localhost:3000/notes
-HTTP Method: POST
-Reasoning: POST is used because it is the standard REST method for submitting data to create a new resource. The server processes the payload and appends it to the collection.
-Request Body Format (JSON):
-JSON
-{
-  "title": "Finish DSA Practice",
-  "description": "Solve 3 LeetCode problems on arrays and graphs."
-}
+To-do List Api implementation:
 
+1.) In memory array
+For this project, I chose to store data using a standard, in-memory JavaScript array (`const notes = []`). Since this is a mini-task focused on mastering routing and HTTP methods, using an array let me skip the setup overhead of database connection drivers (like MongoDB). The obvious drawback is that this data is volatile; whenever the Express server restarts, the array clears to empty. For a production app, I would use such data that is persistent.
 
+2.) Using unique Ids
+Initially, the endpoints targeted notes using their position in the array (`/notes/:index`). However, I realized this creates a massive data corruption flaw. If you delete an item at index 0, every single item behind it immediately shifts down one spot. If a client is interacting with a UI that hasn't refreshed instantly, sending an update or delete request to a specific index could target the wrong note entirely.
+To fix this, I introduced a global `nextId` counter. Now, every new note gets stamped with a permanent, unique numeric ID that increments sequentially. Because this ID is static, a note's ID never changes when neighboring items are shuffled or deleted.
 
+3.)Array integrity
+In early drafts, I considered using the JavaScript `delete` keyword (e.g., `delete notes[index]`). But doing this leaves an "empty hole" (`undefined`) at that position instead of shrinking the array container itself, which messes up count tallying. 
+By moving to unique IDs, my new implementation uses `.findIndex()` to locate the targeted note's position, and then applies `.splice(noteIndex, 1)`. Splice cleanly slices the record completely out of the array and shifts subsequent items forward, maintaining a clean, contiguous collection.
 
-*   **Expected Responses:**
-    *   **Success (201 Created):**
-        ```json
-        {
-          "message": "Note created successfully",
-          "note": { "title": "Finish DSA Practice", "description": "Solve 3 LeetCode problems on arrays and graphs." }
-        }
+4.) Preventing data corruption on partial updates
+A critical flaw with naive update handlers is that if a user submits a PATCH request to change *only* the title, the missing description field might get assigned as `undefined`, inadvertently wiping out existing description data. 
+To achieve a true partial update, my PATCH handler explicitly checks whether `title` or `description` are undefined before overwriting them (`if (title !== undefined)`). If the client leaves a field out of the request payload, the existing value remains safely untouched.
 
-📤 2. Fetch All Notes
-Endpoint URL: http://localhost:3000/notes
-HTTP Method: GET
-Reasoning: GET requests are safe and idempotent operations strictly meant for retrieving data without altering the server state.
-Request Body Format: None (Data sent via URL).
-Expected Responses:
-Success (200 OK):
-JSON
-{
-  "message": "Notes fetched successfully",
-  "notes": [
-    { "title": "Finish DSA Practice", "description": "Solve 3 LeetCode problems on arrays and graphs." }
-  ]
-}
-
-
-It looks like the text cut off right at the end of the code snippet! Here is exactly what happened to the 3rd point, completed with its expected responses so you can copy the full section into your document:
-✏️ 3. Update a Note
-Endpoint URL: http://localhost:3000/notes/:index (e.g., /notes/0)
-HTTP Method: PATCH
-Reasoning: Unlike PUT (which expects a complete replacement of the resource), PATCH is chosen for partial updates. If a user only sends a title, the existing description remains safe and untouched.
-Request Body Format (JSON):
-JSON
-{
-  "title": "Finish Advanced DSA Practice"
-}
-Expected Responses:
-Success (200 OK):
-JSON
-{
-  "message": "Note updated successfully",
-  "note": { 
-    "title": "Finish Advanced DSA Practice", 
-    "description": "Solve 3 LeetCode problems on arrays and graphs." 
-  }
-}
-Error (404 Not Found): Sent if the target index is out of bounds or negative.
-JSON
-{ 
-  "message": "Note not found" 
-}
-
-
-
-🗑️ 4. Delete a Note
-Endpoint URL: http://localhost:3000/notes/:index (e.g., /notes/0)
-HTTP Method: DELETE
-Reasoning: Maps precisely to the deletion of a resource. Using a route parameter (:index) cleanly specifies which exact resource must be removed.
-Request Body Format: None.
-Expected Responses:
-Success (200 OK):
-JSON
-{ "message": "Note deleted successfully" }
-
-
-
-
-   *   **Error (404 Not Found):** Sent if an invalid or non-existent index is requested.
-        ```json
-        { "message": "Note not found" }
-
+APIs that have been used here are:
+1. GET api: To get/read all the notes that have been pushed to backend from frontend and keep their count as well.
+2. POST api: To create a new note.
+3. PUT api: To partially or completely update a note that already exists
+4. DELETE api: Used to delete an existing note

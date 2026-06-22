@@ -3,12 +3,26 @@ const express=require("express") //creating the server
 const app=express();
 app.use(express.json())  //using middleware that makes recieved data readable for express
 
-const notes=[]
+const notes=[];
+let nextId=1;
 
 app.post('/notes',(req,res)=>{
-    notes.push(req.body)
+    const {title,description}=req.body;
+    if(!title || typeof title !== 'string' || title.trim()===''){
+        return res.status(400).json({
+            error:"wrong request",
+            message:"Title is mandatory and it is non-empty"
+        })
+    }
+    const newNote={
+        id:nextId++,
+        title: title.trim(),
+        description:description ? description.trim() : ""
+    };
+    notes.push(newNote);
     res.status(201).json({
-        message:"note created successfully"
+        message:"note created successfully",
+        note:newNote
     })
 })
 
@@ -17,43 +31,62 @@ app.post('/notes',(req,res)=>{
 app.get('/notes',(req,res)=>{
     res.status(200).json({
         message:"Notes fetched successfully",
+        count:notes.length,
         notes: notes
     })
 })
 
 
-app.delete('/notes/:index',(req,res)=>{
-    const index=req.params.index
-    if(!notes[index]){
+app.delete('/notes/:id',(req,res)=>{
+    const target= parseInt(req.params.id,10);
+    const noteIndex=notes.findIndex(note=>note.id===target);
+    if(noteIndex === -1){
         return res.status(404).json({
-            messagee:"Note not found"
+            error:"Page not found",
+            message:"note requested to be deleted does not exist"
         })
     }
-    delete notes[index]
+    notes.splice(noteIndex,1);
     res.status(200).json({
-        message:"Note deleted successfully"
+        message:"note deleted successfully"
     })
     
 })
 
 
 
-app.patch('/notes/:index',(req,res)=>{
-    const index=req.params.index
-
-    if(!notes[index]){
-        return res.status(404).json({
-            messagee:"Note not found"
-        })
-    }
+app.patch('/notes/:id',(req,res)=>{
+    const target=parseInt(req.params.id,10);
     
     const title=req.body.title
     const description=req.body.description
-    notes[index].title=title
-    notes[index].description=description
+    
+    const noteIndex=notes.findIndex(note=>note.id===target);
+
+    if(noteIndex===-1){
+        return res.status(404).json({
+            error:"note not found",
+            message:"note does not exists"
+        })
+    }
+
+    if(title !== undefined){
+        if(typeof title !=='string' || title.trim() === ''){
+            return res.status(400).json({
+                error:"wrong request",
+                message:"Title cannot be blank"
+            })
+        }
+        notes[noteIndex].title=title.trim();
+    }
+
+    if(description !== undefined){
+        notes[noteIndex].description= typeof description ==='string' ? description.trim():description;
+    }
 
     res.status(200).json({
-        message:"note updated successfully"
+        message:"note updated successfully",
+        note:notes[noteIndex]
     })
 })
 
