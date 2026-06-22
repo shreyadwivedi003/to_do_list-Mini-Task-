@@ -1,22 +1,54 @@
-To-do List Api implementation:
+# To-Do List API (Mini-Task)
 
-1.) In memory array
-For this project, I chose to store data using a standard, in-memory JavaScript array (`const notes = []`). Since this is a mini-task focused on mastering routing and HTTP methods, using an array let me skip the setup overhead of database connection drivers (like MongoDB). The obvious drawback is that this data is volatile; whenever the Express server restarts, the array clears to empty. For a production app, I would use such data that is persistent.
+A lightweight, robust RESTful API built with Node.js and Express for managing a to-do list or notes. This project handles full CRUD (Create, Read, Update, Delete) operations using an isolated, in-memory data store.
 
-2.) Using unique Ids
-Initially, the endpoints targeted notes using their position in the array (`/notes/:index`). However, I realized this creates a massive data corruption flaw. If you delete an item at index 0, every single item behind it immediately shifts down one spot. If a client is interacting with a UI that hasn't refreshed instantly, sending an update or delete request to a specific index could target the wrong note entirely.
-To fix this, I introduced a global `nextId` counter. Now, every new note gets stamped with a permanent, unique numeric ID that increments sequentially. Because this ID is static, a note's ID never changes when neighboring items are shuffled or deleted.
+---
 
-3.)Array integrity
-In early drafts, I considered using the JavaScript `delete` keyword (e.g., `delete notes[index]`). But doing this leaves an "empty hole" (`undefined`) at that position instead of shrinking the array container itself, which messes up count tallying. 
-By moving to unique IDs, my new implementation uses `.findIndex()` to locate the targeted note's position, and then applies `.splice(noteIndex, 1)`. Splice cleanly slices the record completely out of the array and shifts subsequent items forward, maintaining a clean, contiguous collection.
+## 🛠️ Tech Stack
 
-4.) Preventing data corruption on partial updates
-A critical flaw with naive update handlers is that if a user submits a PATCH request to change *only* the title, the missing description field might get assigned as `undefined`, inadvertently wiping out existing description data. 
-To achieve a true partial update, my PATCH handler explicitly checks whether `title` or `description` are undefined before overwriting them (`if (title !== undefined)`). If the client leaves a field out of the request payload, the existing value remains safely untouched.
+- **Runtime Environment:** Node.js
+- **Framework:** Express.js
 
-APIs that have been used here are:
-1. GET api: To get/read all the notes that have been pushed to backend from frontend and keep their count as well.
-2. POST api: To create a new note.
-3. PUT api: To partially or completely update a note that already exists
-4. DELETE api: Used to delete an existing note
+---
+
+## 💻 Getting Started
+
+### Prerequisites
+Make sure you have [Node.js](https://nodejs.org/) installed locally on your machine.
+
+### 1. Installation & Setup
+Clone this repository to your local computer, navigate into the project directory, initialize the package configuration, and install Express:
+
+```bash
+git clone [https://github.com/shreyadwivedi003/to_do_list-Mini-Task-.git](https://github.com/shreyadwivedi003/to_do_list-Mini-Task-.git)
+cd to_do_list-Mini-Task-
+npm init -y
+npm install express
+```
+
+### 2. Running the Application
+To start the backend server locally, run the entrypoint execution file:
+
+```bash
+node server.js
+💡 Pro-Tip: Restarting the server manually every time you make a change can be tedious and irritating. To automate server restarts whenever you edit your files, run this instead:
+```
+
+```bash
+npx nodemon server.js
+```
+Once booted up, the application will successfully listen for incoming HTTP requests locally at:
+
+http://localhost:3000
+
+
+### 🚀 Key Features & Architectural Decisions
+Sequential Auto-Increment IDs: Every note is stamped with a static, progressive unique ID number (1, 2, 3...) to maintain permanent reference paths, preventing index-shifting bugs.
+
+-True Partial Updates: The PATCH handler selectively evaluates fields, updating only what is provided in the payload and preventing existing properties from being overwritten with undefined.
+
+-Contiguous Deletions: Uses .findIndex() and .splice() to safely slide data objects together upon deletion, eliminating array "holes".
+
+-Structured Error Responses: Rejects malformed bodies or non-existent IDs gracefully using unified error tracking templates (e.g., 400 Bad Request, 404 Not Found).
+
+-Input Sanitization: Cleanses input strings by calling .trim() to prevent blank spaces or empty text bodies from polluting storage.
