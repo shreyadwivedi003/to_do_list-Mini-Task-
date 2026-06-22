@@ -23,6 +23,7 @@ A lightweight, robust RESTful API built with Node.js and Express for managing a 
 
 ### Prerequisites
 Make sure you have [Node.js](https://nodejs.org/) installed locally.
+
 1. Initialize your project configuration and install the Express framework:
   ```bash
   npm init -y
